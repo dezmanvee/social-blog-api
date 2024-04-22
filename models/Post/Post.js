@@ -17,7 +17,7 @@ const postSchema = new mongoose.Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        // required: true   
     },
     nextEarningDate: {
         type: Date,
@@ -58,4 +58,6 @@ const postSchema = new mongoose.Schema({
     
 }, { timestamps: true })
 
-export const Post = mongoose.model('Post', postSchema)
+const Post = mongoose.model('Post', postSchema)
+
+export default Post;
