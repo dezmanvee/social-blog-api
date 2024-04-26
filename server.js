@@ -1,8 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
+import asyncHandler from "express-async-handler"
 import Post from "./models/Post/Post.js";
 import connectDB from "./config/mongoDB.js";
 import cors from "cors";
+import postRouters from "./routes/posts/postRoutes.js"
 
 dotenv.config();
 const PORT = process.env.PORT || 8000;
@@ -20,86 +22,22 @@ const corseOptions = {
 };
 app.use(cors(corseOptions)); //grant requests to server from listed origins
 
-//! Create a post
-app.post("/api/v1/posts/create", async (req, res) => {
-  try {
-    const postData = req.body;
-    const createdPost = await Post.create(postData);
-    res.json({
-      status: "success",
-      message: "Post created successfully",
-      createdPost,
-    });
-  } catch (err) {
-    throw new Error(err);
-  }
-});
+//!Register posts routes
+app.use('/', postRouters)
 
-//! List posts
-app.get("/api/v1/posts", async (req, res) => {
-  const allPosts = await Post.find();
-  try {
-    res.json({
-      status: "success",
-      message: "Posts fetched successfully",
-      allPosts,
-    });
-  } catch (error) {
-    throw new Error(error);
-  }  
-});
-//! Update a post
-app.put("/api/v1/posts/:postId", async (req, res) => {
-  try {
-    const postId = req.params.postId;
-    
-    const postFound = await Post.findById(postId);
-
-    if (!postFound) {
-        throw new Error ('post not found')
-    }
-
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { title: req.body.title, description: req.body.description },
-      { new: true }
-    );
-    res.json({
-        status: 'success',
-        message: 'Post updated successfully',
-        updatedPost
-    })
-  } catch (error) {
-    throw new Error (error)
-  }
-});
-//! Get a post
-app.get('/api/v1/posts/:postId', async(req, res) => {
-    try {
-        const postId = req.params.postId
-
-        const post = await Post.findById(postId)
-        res.json({
-            status: 'success',
-            post
-        })
-    } catch (error) {
-        throw new Error (error)
-    }
+//! Not found handler
+app.use((req, res, next) => {
+  res.status(404).json({
+    message: 'Page does not exist!'
+  })
 })
-//! Delete a post
-app.delete('/api/v1/posts/:postId', async(req, res) => {
-    try {
-        const postId = req.params.postId
 
-        await Post.findByIdAndDelete(postId)
-        res.json({
-            status: 'success',
-            message: 'Post deleted successfully'
-        })
-    } catch (error) {
-        throw new Error (error)
-    }
+//! Error Handler
+app.use((err, req, res, next) => {
+    const message = err.message
+    res.status(500).json({
+        message,
+    })
 })
 
 
