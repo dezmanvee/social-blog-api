@@ -1,23 +1,32 @@
 import express from "express";
-import postControllers from "../../controllers/posts/postControllers";
+import multer from "multer";
+import postControllers from "../../controllers/posts/postControllers.js";
+import storage from "../../utils/upload.js";
+import isAuthenticated from "../../middlewares/isAuthenticated/isAuthenticated.js";
 
+//! Instance of multer
+const fileUpload = multer({
+  storage
+})
+ 
 const router = express.Router();
+ 
 
 //! Create a post
-router.post("/api/v1/posts/create", postControllers.createPost)
+router.post("/create", isAuthenticated, fileUpload.single('image'), postControllers.createPost)
 
 
   //! List posts
-router.get("/api/v1/posts", postControllers.listAllPosts);
+router.get("/", postControllers.listAllPosts);
 
   //! Update a post
-router.put("/api/v1/posts/:postId", postControllers.updatePost);
+router.put("/:postId", isAuthenticated, postControllers.updatePost);
 
   //! Get a post
-router.get('/api/v1/posts/:postId', postControllers.getSinglePost)
+router.get('/:postId', postControllers.getSinglePost)
 
 
   //! Delete a post
-router.delete('/api/v1/posts/:postId', postControllers.deletePost)
+router.delete('/:postId', isAuthenticated, postControllers.deletePost)
 
-  export default router
+export default router;

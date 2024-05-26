@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     authMethod: {
         type: String,
         required: true,
-        enum: ['local', 'google', 'facebook', 'github'],
+        enum: ['local', 'google', 'facebook', 'linkdin'],
         default: 'local'
     },
     passwordResetToken: {
