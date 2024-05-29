@@ -1,6 +1,7 @@
 import { Category } from "../../models/Category/Category.js";
 import Post from "../../models/Post/Post.js";
 import asyncHandler from "express-async-handler";
+import { User } from "../../models/User/User.js";
 
 const postControllers = {
   //! Create a post
@@ -12,6 +13,9 @@ const postControllers = {
     if (!categoryExists) {
       throw new Error("Category is not available.");
     }
+
+    // Check if user exits in DB
+    const userExists = await User.findById(req.user);
 
     const createdPost = await Post.create({
       description,
@@ -30,6 +34,12 @@ const postControllers = {
 
     //Resave the category
     await categoryExists.save();
+
+    //push post to the user
+    userExists.posts.push(createdPost?._id)
+
+     //Resave the category 
+     await userExists.save()
   }),
   //! List posts
   listAllPosts: asyncHandler(async (req, res) => {
@@ -42,10 +52,10 @@ const postControllers = {
     }
 
     if (title) {
-      filter.description = {$regex: title, $options: 'i'}; //Case insensitive
+      filter.description = { $regex: title, $options: "i" }; //Case insensitive
     }
     //Total posts based on filtering
-    const totalPostsByFilter = await Post.countDocuments(filter)
+    const totalPostsByFilter = await Post.countDocuments(filter);
     const allPosts = await Post.find(filter)
       .populate("category")
       .sort({ createdAt: -1 })
@@ -57,7 +67,7 @@ const postControllers = {
       allPosts,
       currentPage: page,
       perPage: limit,
-      totalPages: Math.ceil(totalPostsByFilter / limit)
+      totalPages: Math.ceil(totalPostsByFilter / limit),
     });
   }),
   //! Update a post

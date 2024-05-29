@@ -5,6 +5,7 @@ import connectDB from "./config/mongoDB.js";
 import passport from "./utils/passport.js";
 import postRouters from "./routes/posts/postRoutes.js"
 import categoryRouters from "./routes/categories/categoryRoutes.js"
+import planRouters from "./routes/plans/planRoutes.js"
 import userRouters from "./routes/user/userRoutes.js";
 
 
@@ -37,8 +38,11 @@ app.use(cors(corseOptions)); //grant requests to server from listed origins
 //!Initialize posts routes
 app.use('/api/v1/posts', postRouters)
 
-//!Initialize posts routes
+//!Initialize categories routes
 app.use('/api/v1/categories', categoryRouters)
+
+//!Initialize plans routes
+app.use('/api/v1/plans', planRouters)
 
 //!Initialize users routes
 app.use('/api/v1/users', userRouters)

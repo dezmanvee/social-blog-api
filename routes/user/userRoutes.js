@@ -1,5 +1,6 @@
 import express from "express";
 import userController from "../../controllers/user/userController.js";
+import isAuthenticated from "../../middlewares/isAuthenticated/isAuthenticated.js";
 
 
 const userRouter = express.Router()
@@ -21,6 +22,9 @@ userRouter.get('/user-auth-status', userController.userAuthStatus);
 
 //*----------Logout User------------
 userRouter.post('/logout', userController.logout);
+
+//*----------Logout User------------
+userRouter.get('/profile', isAuthenticated, userController.userProfile);
 
 
 
