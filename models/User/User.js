@@ -56,7 +56,7 @@ const userSchema = new mongoose.Schema({
         default: 0
     },
     comments: [{type: mongoose.Schema.Types.ObjectId, ref: 'Comment'}],
-    plans: {
+    plan: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Plan'
     },
