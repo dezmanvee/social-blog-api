@@ -26,6 +26,12 @@ userRouter.post('/logout', userController.logout);
 //*----------Logout User------------
 userRouter.get('/profile', isAuthenticated, userController.userProfile);
 
+//*---------- User Following------------
+userRouter.put('/following/:followId', isAuthenticated, userController.userFollowing);
+
+//*---------- User Following------------
+userRouter.put('/unfollowing/:unFollowId', isAuthenticated, userController.userUnollowing);
+
 
 
 export default userRouter;

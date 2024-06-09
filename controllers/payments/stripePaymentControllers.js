@@ -89,6 +89,34 @@ const stripePaymentControllers = {
         user: userExists
       })
     }
+  }),
+
+  //! Free plan
+  freePlan: asyncHandler(async(req, res) => {
+    
+    try {
+      //Find user
+      const user = await User.findById(req?.user)
+      
+      if (!user) {
+        throw new Error('User does not exist.')
+      }
+      // Update user hasSelectedPlan property
+      user.hasSelectedPlan = true;
+
+      //Resave user
+      await user.save()
+      
+      //Send response
+      res.json({
+        status: 'succes',
+        message: 'Free plan activated.',
+        user,
+      })
+
+    } catch (error) {
+      res.json(error)
+    }
   })
 
 }

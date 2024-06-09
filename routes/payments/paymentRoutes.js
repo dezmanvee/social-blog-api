@@ -13,5 +13,9 @@ router.post("/stripe-checkout", isAuthenticated, stripePaymentControllers.paymen
 router.get("/verify/:paymentId", stripePaymentControllers.verify);
 
 
+//! Free plan
+router.get("/free-plan", isAuthenticated, stripePaymentControllers.freePlan)
+
+
 
 export default router;

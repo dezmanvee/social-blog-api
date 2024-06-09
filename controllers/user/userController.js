@@ -143,5 +143,61 @@ const userController = {
       user,
     });
   }),
+  //!----------User Following and Followers------------->
+  userFollowing: asyncHandler(async(req, res) => {
+    //* Find user who wants to follow another user (req.user)
+    const userId = req.user
+    //* Get user who was followed (req.params)
+    const {followId} = req.params
+    //* Update the user profile who wants to follow another user
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: {following: followId}
+    }, {new: true})
+
+    //* Update the user profile who was followed
+    await User.findByIdAndUpdate(followId, {
+      $addToSet: {followers: userId}
+    }, {new: true})
+
+    //* Send response
+    res.json({
+      status: 'success',
+      message: 'You are now following this user.'
+    })
+  }),
+
+  //!----------Users UnFollowing and Unfollowers------------->
+  userUnollowing: asyncHandler(async(req, res) => {
+    const userId = req.user
+    const {unFollowId} = req.params
+    
+    //* Find user who wants to unfollow another user
+    const user = await User.findById(userId);
+   
+
+    //* Get user who was unfollowed (req.params)
+    const userUnfollow = await User.findById(unFollowId);
+
+    if (!user || !userUnfollow) {
+      throw new Error('User not found')
+    }
+    
+    //* Update the user profile who wants to follow another user
+    user.following.pull(unFollowId)
+
+    //* Update the user profile who was followed  
+    user.followers.pull(userId)
+
+    // * Resave the users
+    await user.save()
+    await userUnfollow.save()
+
+    //* Send response
+    res.json({
+      status: 'success',
+      message: 'You are now unfollowing this user.'
+    })
+  }),
+  
 };
 export default userController;

@@ -10,6 +10,7 @@ const postControllers = {
 
     // Check if category exits in DB
     const categoryExists = await Category.findById(category);
+
     if (!categoryExists) {
       throw new Error("Category is not available.");
     }
@@ -17,18 +18,17 @@ const postControllers = {
     // Check if user exits in DB
     const userExists = await User.findById(req.user);
 
+    if (!userExists) {
+      throw new Error("User not found");
+    }
+
     const createdPost = await Post.create({
       description,
       category,
-      image: req.file,
-      author: req.user,
+      image: req?.file,
+      author: req?.user,
     });
-    res.json({
-      status: "success",
-      message: "Post created successfully",
-      createdPost,
-    });
-
+    
     //push post into category
     categoryExists.posts.push(categoryExists?._id);
 
@@ -40,6 +40,13 @@ const postControllers = {
 
      //Resave the category 
      await userExists.save()
+
+    // Send response
+     res.json({
+      status: "success",
+      message: "Post created",
+      createdPost,
+    });
   }),
   //! List posts
   listAllPosts: asyncHandler(async (req, res) => {
@@ -93,9 +100,29 @@ const postControllers = {
   }),
   //! Get a post
   getSinglePost: asyncHandler(async (req, res) => {
+    //Get postId
     const postId = req.params.postId;
 
+    //Get post viewer ID
+    const userId = req.user ? req.user : null
+
+    //Find the post
     const post = await Post.findById(postId);
+
+    if (!post) {
+      throw new Error('Post not found.')
+    }
+
+    if (userId) {
+      //Check if user has viewed post before or not and update
+      if (!post?.viewers?.includes(userId)) {
+          post?.viewers?.push(userId)
+          //Increase viewCount
+          post.viewCount = post?.viewCount + 1
+          //Resave post
+          await post.save()
+      }
+    }
     res.json({
       status: "success",
       post,
@@ -105,11 +132,68 @@ const postControllers = {
   deletePost: asyncHandler(async (req, res) => {
     const postId = req.params.postId;
 
-    await Post.findByIdAndDelete(postId);
+    const deletion = await Post.findByIdAndDelete(postId);
+    if (!deletion) {
+      throw new Error('Post is not available for deletion.')
+    }
     res.json({
       status: "success",
       message: "Post deleted successfully",
     });
+  }),
+  //! Like a post
+  like: asyncHandler(async (req, res) => {
+    //Get post id
+    const {postId} = req.params
+    //Get the user
+    const userId = req.user
+    //Find the post
+    const post = await Post.findById(postId)
+    //Check if user has disliked the post before
+    if (post?.dislikes?.includes(userId)) {
+        post?.dislikes?.pull(userId)
+    }
+    //Check if user has liked the post before
+    if (post?.likes?.includes(userId)){
+      post?.likes?.pull(userId)
+    } else {
+      post?.likes?.push(userId)
+    }
+
+    //Resave the post
+    await post.save()
+    //Send response
+    res.json({
+      status: 'success',
+      message: 'You liked this post.'
+    })
+  }),
+  //! Dislike a post
+  dislike: asyncHandler(async (req, res) => {
+    //Get post id
+    const {postId} = req.params
+    //Get the user
+    const userId = req.user
+    //Find the post
+    const post = await Post.findById(postId)
+    //Check if user has liked the post before
+    if (post?.likes?.includes(userId)) {
+        post?.likes?.pull(userId)
+    }
+    //Check if user has disliked the post before
+    if (post?.dislikes?.includes(userId)){
+      post?.dislikes?.pull(userId)
+    } else {
+      post?.dislikes?.push(userId)
+    }
+
+    //Resave the post
+    await post.save()
+    //Send response
+    res.json({
+      status: 'success',
+      message: 'You disliked this post.'
+    })
   }),
 };
 
