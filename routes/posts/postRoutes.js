@@ -5,6 +5,7 @@ import storage from "../../utils/upload.js";
 import isAuthenticated from "../../middlewares/isAuthenticated/isAuthenticated.js";
 import checkHasSelectedPlan from "../../middlewares/hasSelectedPlan/hasSelectedPlan.js";
 import authOrNot from "../../middlewares/authOrNot/authOrNot.js";
+import isAccountVerified from "../../middlewares/isAccoutVerified/isAccountVerified.js";
 
 //! Instance of multer
 const fileUpload = multer({
@@ -18,6 +19,7 @@ router.post(
   "/create",
   isAuthenticated,
   checkHasSelectedPlan,
+  isAccountVerified,
   fileUpload.single("image"),
   postControllers.createPost
 );

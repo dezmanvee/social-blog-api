@@ -3,6 +3,8 @@ import { User } from "../../models/User/User.js";
 import bcrypt from "bcrypt";
 import passport from "../../utils/passport.js";
 import jwt from "jsonwebtoken";
+import sendVerificationEmail from "../../utils/nodemailer.js";
+const crypto = await import('crypto');
 
 const userController = {
   //!----------Register------------->
@@ -198,6 +200,64 @@ const userController = {
       message: 'You are now unfollowing this user.'
     })
   }),
-  
+  //!----------Account verification email token------------->
+  generateAccountEmailToken: asyncHandler( async(req, res) => {
+   
+    // Get the login user
+    const user = await User.findById(req.user) 
+
+    //Check if user exists or not
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    //Check if user email exists
+    if (!user?.email) {
+      throw new Error('User email doesn\'t exist.')
+    }
+
+    // Generate token for user
+    const emailToken = await user.generateAccVerificationEmail()
+
+    //Resave the user
+    await user.save()
+
+    //Send email
+    sendVerificationEmail(user?.email, emailToken)
+    
+    //Send Response
+    res.json({
+      message: ` An account verification email has been sent to ${user?.email} and will expire in 10 minutes.`
+    })
+  }),
+
+  //!----------Account verification email ------------->
+  verifyAccountEmail: asyncHandler(async(req, res) => {
+    //Get the token
+    const {emailToken} = req.params
+    
+    //Convert token with the one saved in DB
+    const verifyToken = crypto.createHash('sha256').update(emailToken).digest('hex')
+    
+    //Find user
+    const user = await User.findOne({
+      accountVerificationToken: verifyToken,
+      accountVerificationExpires: {$gt: Date.now()}
+    })
+    
+    if (!user) {
+      throw new Error('Account verification token has expired.')
+    }
+    //Update user fields
+    user.isEmailVerified = true;
+    user.accountVerificationToken = null;
+    user.accountVerificationExpires = null;
+
+    //Resave user
+    await user.save();
+    res.json({
+      message: 'Email verified.'
+    })
+  })
 };
 export default userController;

@@ -32,6 +32,12 @@ userRouter.put('/following/:followId', isAuthenticated, userController.userFollo
 //*---------- User Following------------
 userRouter.put('/unfollowing/:unFollowId', isAuthenticated, userController.userUnollowing);
 
+//*---------- Account Verification Email Token------------
+userRouter.put('/generate-account-email-token', isAuthenticated, userController.generateAccountEmailToken);
+
+//*---------- Account Verification Email------------
+userRouter.put('/verify-account-email/:emailToken', isAuthenticated, userController.verifyAccountEmail);
+
 
 
 export default userRouter;
