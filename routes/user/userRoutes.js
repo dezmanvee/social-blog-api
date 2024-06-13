@@ -38,6 +38,10 @@ userRouter.put('/generate-account-email-token', isAuthenticated, userController.
 //*---------- Account Verification Email------------
 userRouter.put('/verify-account-email/:emailToken', isAuthenticated, userController.verifyAccountEmail);
 
+//*---------- Account Verification Email------------
+userRouter.post('/forgot-password', userController.generatePassportResetToken);
 
+//*---------- Account Verification Email------------
+userRouter.post('/verify-forgot-password/:resetToken', userController.verifyPasswordReset);
 
 export default userRouter;

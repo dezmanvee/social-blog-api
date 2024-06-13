@@ -3,7 +3,7 @@ import { User } from "../../models/User/User.js";
 import bcrypt from "bcrypt";
 import passport from "../../utils/passport.js";
 import jwt from "jsonwebtoken";
-import sendVerificationEmail from "../../utils/nodemailer.js";
+import {sendVerificationEmail, PasswordResetEmail} from "../../utils/nodemailer.js";
 const crypto = await import('crypto');
 
 const userController = {
@@ -258,6 +258,76 @@ const userController = {
     res.json({
       message: 'Email verified.'
     })
-  })
+  }),
+
+  //!----------Password Reset Token------------->
+  generatePassportResetToken: asyncHandler( async(req, res) => {
+    // Get the user email
+    const {email} = req.body
+
+    //Find user by email
+    const user = await User.findOne({email})
+
+    //Check if user exists or not
+    if (!user) {
+      throw new Error(`User with the email, ${user?.email} is not found in our database.`)
+    }
+
+    //If user did not register with local strategy
+    if (user?.authMethod !== 'local') {
+      throw new Error('Kindly login with your social account')
+    }
+
+    //Generate email token
+    const resetToken = await user.generatePassportResetTokenEmail();
+
+    //Resave the user
+    await user.save();
+
+    // Send email
+    PasswordResetEmail(user?.email, resetToken);
+
+    //Send Response
+    res.json({
+      message: `Check your email, ${user?.email} to reset your password. Link expires in 10 minutes.`
+    })
+  }),
+
+  //!----------Password Reset Verification ------------->
+  verifyPasswordReset: asyncHandler(async(req, res) => {
+    //Get the token
+    const {resetToken} = req.params
+
+    //Get the password
+    const {password} = req.body
+    
+    //Convert token with the one saved in DB
+    const verifyToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+
+    //Find user
+    const user = await User.findOne({
+      passwordResetToken: verifyToken,
+      passwordResetExpires: {$gt: Date.now()}
+    })
+    
+    if (!user) {
+      throw new Error(`Account verification token has expired.`)
+    }
+
+    //Update the password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt)
+
+    //Update user fields
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+
+    //Resave user
+    await user.save();
+    res.json({
+      message: 'Password successfully reset'
+    })
+  }),
+
 };
 export default userController;

@@ -102,4 +102,21 @@ this.accountVerificationExpires = Date.now() + 10 * 60 * 1000 // Expires in 10mi
 return emailToken
 };
 
+//Generate Password Reset Token
+userSchema.methods.generatePassportResetTokenEmail = function () {
+  //Generate token
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
+  //update accountVerificationToken
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+// update accountVerificationExpires
+this.passwordResetExpires = Date.now() + 10 * 60 * 1000 // Expires in 10mins
+
+return resetToken
+};
+
 export const User = mongoose.model("User", userSchema);
