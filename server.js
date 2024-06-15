@@ -2,12 +2,15 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/mongoDB.js";
+import cron from 'node-cron';
 import passport from "./utils/passport.js";
 import postRouters from "./routes/posts/postRoutes.js"
 import categoryRouters from "./routes/categories/categoryRoutes.js"
+import earningRouter from "./routes/earnings/earningsRoute.js"
 import planRouters from "./routes/plans/planRoutes.js"
 import paymentRouters from "./routes/payments/paymentRoutes.js"
 import userRouters from "./routes/user/userRoutes.js";
+import calculateEarnings from "./utils/calculateEarnings.js";
 
 
 
@@ -16,9 +19,31 @@ const PORT = process.env.PORT || 8000;
 //!connect DB
 connectDB();
 
+//! Schedule task to run at 23:59 of the last day of every month
+
+//* Helper function to check if today is the last day of the month
+const isLastDayOfMonth = () => {
+  const today = new Date();
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return today.getDate() === lastDayOfMonth;
+};
+
+cron.schedule('59 23 28-31 * *', async () => {
+
+  if (isLastDayOfMonth()) {
+    try {
+      calculateEarnings() 
+    } catch (error) {
+      console.log('Error calculating earnings', error);
+    }
+  }
+}, {
+  scheduled: true,
+  timezone: 'America/New_York'
+})
+
 const app = express();  
 
- 
 
 //!Middlewares
 app.use(express.json()); //gets payload from req body
@@ -41,6 +66,9 @@ app.use('/api/v1/posts', postRouters)
 
 //!Initialize categories routes
 app.use('/api/v1/categories', categoryRouters)
+
+//!Initialize categories routes
+app.use('/api/v1/earnings', earningRouter)
 
 //!Initialize plans routes
 app.use('/api/v1/plans', planRouters)

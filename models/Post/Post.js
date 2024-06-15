@@ -33,6 +33,10 @@ const postSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    lastCalculatedViewsCount: {
+        type: Number,
+        default: 0
+    },
     viewCount: {
         type: Number,
         default: 0

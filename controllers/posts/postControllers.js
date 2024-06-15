@@ -28,7 +28,7 @@ const postControllers = {
       image: req?.file,
       author: req?.user,
     });
-    
+
     //push post into category
     categoryExists.posts.push(categoryExists?._id);
 
@@ -36,13 +36,13 @@ const postControllers = {
     await categoryExists.save();
 
     //push post to the user
-    userExists.posts.push(createdPost?._id)
+    userExists.posts.push(createdPost?._id);
 
-     //Resave the category 
-     await userExists.save()
+    //Resave the category
+    await userExists.save();
 
     // Send response
-     res.json({
+    res.json({
       status: "success",
       message: "Post created",
       createdPost,
@@ -104,24 +104,24 @@ const postControllers = {
     const postId = req.params.postId;
 
     //Get post viewer ID
-    const userId = req.user ? req.user : null
+    const userId = req.user ? req.user : null;
 
-    //Find the post
-    const post = await Post.findById(postId);
-
+    const post = await Post.findById(postId)
     if (!post) {
-      throw new Error('Post not found.')
+      throw new Error("Post not found.");
     }
 
+    //Check if user has viewed post before or not and update
     if (userId) {
-      //Check if user has viewed post before or not and update
-      if (!post?.viewers?.includes(userId)) {
-          post?.viewers?.push(userId)
-          //Increase viewCount
-          post.viewCount = post?.viewCount + 1
-          //Resave post
-          await post.save()
-      }
+      await Post.findByIdAndUpdate(
+        postId,
+        {
+          $addToSet: {
+            viewers: userId,
+          },
+        },
+        { new: true }
+      );
     }
     res.json({
       status: "success",
@@ -134,7 +134,7 @@ const postControllers = {
 
     const deletion = await Post.findByIdAndDelete(postId);
     if (!deletion) {
-      throw new Error('Post is not available for deletion.')
+      throw new Error("Post is not available for deletion.");
     }
     res.json({
       status: "success",
@@ -144,56 +144,56 @@ const postControllers = {
   //! Like a post
   like: asyncHandler(async (req, res) => {
     //Get post id
-    const {postId} = req.params
+    const { postId } = req.params;
     //Get the user
-    const userId = req.user
+    const userId = req.user;
     //Find the post
-    const post = await Post.findById(postId)
+    const post = await Post.findById(postId);
     //Check if user has disliked the post before
     if (post?.dislikes?.includes(userId)) {
-        post?.dislikes?.pull(userId)
+      post?.dislikes?.pull(userId);
     }
     //Check if user has liked the post before
-    if (post?.likes?.includes(userId)){
-      post?.likes?.pull(userId)
+    if (post?.likes?.includes(userId)) {
+      post?.likes?.pull(userId);
     } else {
-      post?.likes?.push(userId)
+      post?.likes?.push(userId);
     }
 
     //Resave the post
-    await post.save()
+    await post.save();
     //Send response
     res.json({
-      status: 'success',
-      message: 'You liked this post.'
-    })
+      status: "success",
+      message: "You liked this post.",
+    });
   }),
   //! Dislike a post
   dislike: asyncHandler(async (req, res) => {
     //Get post id
-    const {postId} = req.params
+    const { postId } = req.params;
     //Get the user
-    const userId = req.user
+    const userId = req.user;
     //Find the post
-    const post = await Post.findById(postId)
+    const post = await Post.findById(postId);
     //Check if user has liked the post before
     if (post?.likes?.includes(userId)) {
-        post?.likes?.pull(userId)
+      post?.likes?.pull(userId);
     }
     //Check if user has disliked the post before
-    if (post?.dislikes?.includes(userId)){
-      post?.dislikes?.pull(userId)
+    if (post?.dislikes?.includes(userId)) {
+      post?.dislikes?.pull(userId);
     } else {
-      post?.dislikes?.push(userId)
+      post?.dislikes?.push(userId);
     }
 
     //Resave the post
-    await post.save()
+    await post.save();
     //Send response
     res.json({
-      status: 'success',
-      message: 'You disliked this post.'
-    })
+      status: "success",
+      message: "You disliked this post.",
+    });
   }),
 };
 
