@@ -69,3 +69,37 @@ export const PasswordResetEmail = async (to, resetToken) => {
         throw new Error('Email sending failed.')
     }
 }
+
+
+//!--------------Post Notification-------------->
+
+export const sendNotification = async (to, postId) => {
+    try {
+        //* 1. Create transporter
+        const transporter = nodemailer.createTransport({
+            // host: "smtp.gmail.com",
+            service: 'gmail',
+            port: 587,
+            secure: false,
+            auth: {
+                user: process.env.GMAIL_APP_USER,
+                pass: process.env.GMAIL_APP_PASSWORD, 
+            }
+        })
+        //* 2. Create Message
+        const message = {
+            to,
+            subject: 'You have A Notification',
+            html:  ` <p>A new post was created on our site B Blogger</p>
+            <p>Click <a href="http://localhost:3000/posts/${postId}">here</a> to view the post.</p>
+            `
+        }
+        //* 3. Send the Message
+        const info = await transporter.sendMail(message)
+        console.log('Email sent', info.messageId);
+        return info
+    } catch (error) {
+        console.log(error);
+        throw new Error('Email sending failed.')
+    }
+}

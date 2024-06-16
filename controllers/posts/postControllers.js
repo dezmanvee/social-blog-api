@@ -2,6 +2,8 @@ import { Category } from "../../models/Category/Category.js";
 import Post from "../../models/Post/Post.js";
 import asyncHandler from "express-async-handler";
 import { User } from "../../models/User/User.js";
+import { Notification } from "../../models/Notification/Notification.js";
+import {sendNotification} from "../../utils/nodemailer.js"
 
 const postControllers = {
   //! Create a post
@@ -41,6 +43,22 @@ const postControllers = {
     //Resave the category
     await userExists.save();
 
+    //Create notification
+    await Notification.create({
+      userId: req.user,
+      postId: createdPost._id,
+      message: `A new post was created by ${userExists?.username}`
+    })
+
+    //Send a notification email to followers
+    userExists?.followers?.forEach( async (follower) => {
+      const users = await User.find({_id: follower})
+      //Iterate the users array
+      users.forEach((user) => {
+        //Send notification
+        sendNotification(user?.email, createdPost?._id)
+      })
+    }) 
     // Send response
     res.json({
       status: "success",
@@ -65,7 +83,7 @@ const postControllers = {
     const totalPostsByFilter = await Post.countDocuments(filter);
     const allPosts = await Post.find(filter)
       .populate("category")
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1 }) 
       .skip((page - 1) * limit)
       .limit(limit);
     res.json({
