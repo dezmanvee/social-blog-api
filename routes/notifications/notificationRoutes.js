@@ -8,7 +8,7 @@ const router = express.Router();
   //! List notifications
 router.get("/", notificationControllers.listAllNotifications);
 
-  //! Update a post
+  //! Update a notification
 router.put("/:notificationId", notificationControllers.updateNotification);
 
 

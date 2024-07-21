@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import passport from "./utils/passport.js";
 import postRouters from "./routes/posts/postRoutes.js"
 import categoryRouters from "./routes/categories/categoryRoutes.js"
+import commentRouters from "./routes/comments/commentRoutes.js"
 import notificationRouters from "./routes/notifications/notificationRoutes.js"
 import earningRouter from "./routes/earnings/earningsRoute.js"
 import planRouters from "./routes/plans/planRoutes.js"
@@ -68,6 +69,9 @@ app.use('/api/v1/posts', postRouters)
 
 //!Initialize categories routes
 app.use('/api/v1/categories', categoryRouters)
+
+//!Initialize comments routes
+app.use('/api/v1/comments', commentRouters)
 
 //!Initialize categories routes
 app.use('/api/v1/notifications', notificationRouters)

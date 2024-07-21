@@ -13,7 +13,9 @@ const notificationControllers = {
       allNotifications,
     });
   }),
-  //! Update a category
+
+  
+  //! Read notifications
   updateNotification: asyncHandler(async (req, res) => {
 
     const notificationId = req.params.notificationId;

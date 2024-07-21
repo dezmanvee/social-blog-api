@@ -124,7 +124,12 @@ const postControllers = {
     //Get post viewer ID
     const userId = req.user ? req.user : null;
 
-    const post = await Post.findById(postId)
+    const post = await Post.findById(postId).populate({
+      path: "comments",
+      populate: {
+        path: "author"
+      }
+    }); 
     if (!post) {
       throw new Error("Post not found.");
     }
@@ -166,7 +171,7 @@ const postControllers = {
     //Get the user
     const userId = req.user;
     //Find the post
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId)
     //Check if user has disliked the post before
     if (post?.dislikes?.includes(userId)) {
       post?.dislikes?.pull(userId);
