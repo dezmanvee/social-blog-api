@@ -3,7 +3,7 @@ import Post from "../../models/Post/Post.js";
 import asyncHandler from "express-async-handler";
 import { User } from "../../models/User/User.js";
 import { Notification } from "../../models/Notification/Notification.js";
-import {sendNotification} from "../../utils/nodemailer.js"
+import { sendNotification } from "../../utils/nodemailer.js";
 
 const postControllers = {
   //! Create a post
@@ -47,18 +47,18 @@ const postControllers = {
     await Notification.create({
       userId: req.user,
       postId: createdPost._id,
-      message: `A new post was created by ${userExists?.username}`
-    })
+      message: `A new post was created by ${userExists?.username}`,
+    });
 
     //Send a notification email to followers
-    userExists?.followers?.forEach( async (follower) => {
-      const users = await User.find({_id: follower})
+    userExists?.followers?.forEach(async (follower) => {
+      const users = await User.find({ _id: follower });
       //Iterate the users array
       users.forEach((user) => {
         //Send notification
-        sendNotification(user?.email, createdPost?._id)
-      })
-    }) 
+        sendNotification(user?.email, createdPost?._id);
+      });
+    });
     // Send response
     res.json({
       status: "success",
@@ -82,8 +82,15 @@ const postControllers = {
     //Total posts based on filtering
     const totalPostsByFilter = await Post.countDocuments(filter);
     const allPosts = await Post.find(filter)
-      .populate("category")
-      .sort({ createdAt: -1 }) 
+    .populate({
+      path: "category",
+      populate: {
+        path: "author",
+        model: "User"
+      },
+    })
+    .populate('author')
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
     res.json({
@@ -99,6 +106,8 @@ const postControllers = {
   updatePost: asyncHandler(async (req, res) => {
     const postId = req.params.postId;
 
+    const { description, category } = req.body;
+
     const postFound = await Post.findById(postId);
 
     if (!postFound) {
@@ -107,7 +116,7 @@ const postControllers = {
 
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      { title: req.body.title, description: req.body.description },
+      { description, image: req?.file, category },
       { new: true }
     );
     res.json({
@@ -124,12 +133,22 @@ const postControllers = {
     //Get post viewer ID
     const userId = req.user ? req.user : null;
 
-    const post = await Post.findById(postId).populate({
-      path: "comments",
-      populate: {
-        path: "author"
-      }
-    }); 
+    const post = await Post.findById(postId).populate([
+      {
+        path: "comments",
+        populate: {
+          path: "author",
+          // model: "User", 
+        },
+      },
+      {
+        path: "category",
+        populate: {
+          path: "author",
+          // model: "User", 
+        },
+      },
+    ]);
     if (!post) {
       throw new Error("Post not found.");
     }
@@ -171,7 +190,7 @@ const postControllers = {
     //Get the user
     const userId = req.user;
     //Find the post
-    const post = await Post.findById(postId)
+    const post = await Post.findById(postId);
     //Check if user has disliked the post before
     if (post?.dislikes?.includes(userId)) {
       post?.dislikes?.pull(userId);

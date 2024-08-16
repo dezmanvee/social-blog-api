@@ -3,8 +3,11 @@ import { User } from "../../models/User/User.js";
 import bcrypt from "bcrypt";
 import passport from "../../utils/passport.js";
 import jwt from "jsonwebtoken";
-import {sendVerificationEmail, PasswordResetEmail} from "../../utils/nodemailer.js";
-const crypto = await import('crypto');
+import {
+  sendVerificationEmail,
+  PasswordResetEmail,
+} from "../../utils/nodemailer.js";
+const crypto = await import("crypto");
 
 const userController = {
   //!----------Register------------->
@@ -119,6 +122,7 @@ const userController = {
           username: user?.username,
           profilePicture: user?.profilePicture,
           isAuthenticated: true,
+          createdAt: user?.createdAt
         });
       }
     } catch (error) {
@@ -146,107 +150,116 @@ const userController = {
     });
   }),
   //!----------User Following and Followers------------->
-  userFollowing: asyncHandler(async(req, res) => {
+  userFollowing: asyncHandler(async (req, res) => {
     //* Find user who wants to follow another user (req.user)
-    const userId = req.user
+    const userId = req.user;
     //* Get user who was followed (req.params)
-    const {followId} = req.params
+    const { followId } = req.params;
     //* Update the user profile who wants to follow another user
-    await User.findByIdAndUpdate(userId, {
-      $addToSet: {following: followId}
-    }, {new: true})
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { following: followId },
+      },
+      { new: true }
+    );
 
     //* Update the user profile who was followed
-    await User.findByIdAndUpdate(followId, {
-      $addToSet: {followers: userId}
-    }, {new: true})
+    await User.findByIdAndUpdate(
+      followId,
+      {
+        $addToSet: { followers: userId },
+      },
+      { new: true }
+    );
 
     //* Send response
     res.json({
-      status: 'success',
-      message: 'You are now following this user.'
-    })
+      status: "success",
+      message: "You are now following this user.",
+    });
   }),
 
   //!----------Users UnFollowing and Unfollowers------------->
-  userUnollowing: asyncHandler(async(req, res) => {
-    const userId = req.user
-    const {unFollowId} = req.params
-    
+  userUnollowing: asyncHandler(async (req, res) => {
+    const userId = req.user;
+    const { unFollowId } = req.params;
+
     //* Find user who wants to unfollow another user
     const user = await User.findById(userId);
-   
 
     //* Get user who was unfollowed (req.params)
     const userUnfollow = await User.findById(unFollowId);
 
     if (!user || !userUnfollow) {
-      throw new Error('User not found')
+      throw new Error("User not found");
     }
-    
-    //* Update the user profile who wants to follow another user
-    user.following.pull(unFollowId)
 
-    //* Update the user profile who was followed  
-    user.followers.pull(userId)
+    //* Update the user profile who wants to follow another user
+    user.following.pull(unFollowId);
+
+    //* Update the user profile who was followed
+    user.followers.pull(userId);
 
     // * Resave the users
-    await user.save()
-    await userUnfollow.save()
+    await user.save();
+    await userUnfollow.save();
 
     //* Send response
     res.json({
-      status: 'success',
-      message: 'You are now unfollowing this user.'
-    })
+      status: "success",
+      message: "You are now unfollowing this user.",
+    });
   }),
   //!----------Account verification email token------------->
-  generateAccountEmailToken: asyncHandler( async(req, res) => {
-   
+  generateAccountEmailToken: asyncHandler(async (req, res) => {
     // Get the login user
-    const user = await User.findById(req.user) 
+    const user = await User.findById(req.user);
 
     //Check if user exists or not
     if (!user) {
-      throw new Error('User not found')
+      throw new Error("User not found");
     }
 
     //Check if user email exists
     if (!user?.email) {
-      throw new Error('User email doesn\'t exist.')
+      throw new Error("User email doesn't exist.");
     }
 
     // Generate token for user
-    const emailToken = await user.generateAccVerificationEmail()
+    const emailToken = await user.generateAccVerificationEmail();
 
     //Resave the user
-    await user.save()
+    await user.save();
 
     //Send email
-    sendVerificationEmail(user?.email, emailToken)
-    
+    sendVerificationEmail(user?.email, emailToken);
+
     //Send Response
     res.json({
-      message: ` An account verification email has been sent to ${user?.email} and will expire in 10 minutes.`
-    })
+      message: ` An account verification email has been sent to ${user?.email} and will expire in 10 minutes.`,
+    });
   }),
 
   //!----------Account verification email ------------->
-  verifyAccountEmail: asyncHandler(async(req, res) => {
+  verifyAccountEmail: asyncHandler(async (req, res) => {
     //Get the token
-    const {emailToken} = req.params
-    
+    const { emailToken } = req.params;
+
     //Convert token with the one saved in DB
-    const verifyToken = crypto.createHash('sha256').update(emailToken).digest('hex')
-    
+    const verifyToken = crypto
+      .createHash("sha256")
+      .update(emailToken)
+      .digest("hex");
+
     //Find user
     const user = await User.findOne({
       accountVerificationToken: verifyToken,
-      accountVerificationExpires: {$gt: Date.now()}
-    })
-    
+      accountVerificationExpires: { $gt: Date.now() },
+    });
+
     if (!user) {
-      throw new Error('Account verification token has expired.')
+      throw new Error("Account verification token has expired.");
     }
     //Update user fields
     user.isEmailVerified = true;
@@ -256,26 +269,28 @@ const userController = {
     //Resave user
     await user.save();
     res.json({
-      message: 'Email verified.'
-    })
+      message: "Email verified.",
+    });
   }),
 
   //!----------Password Reset Token------------->
-  generatePassportResetToken: asyncHandler( async(req, res) => {
+  generatePassportResetToken: asyncHandler(async (req, res) => {
     // Get the user email
-    const {email} = req.body
+    const { email } = req.body;
 
     //Find user by email
-    const user = await User.findOne({email})
+    const user = await User.findOne({ email });
 
     //Check if user exists or not
     if (!user) {
-      throw new Error(`User with the email, ${user?.email} is not found in our database.`)
+      throw new Error(
+        `User with the email, ${user?.email} is not found in our database.`
+      );
     }
 
     //If user did not register with local strategy
-    if (user?.authMethod !== 'local') {
-      throw new Error('Kindly login with your social account')
+    if (user?.authMethod !== "local") {
+      throw new Error("Kindly login with your social account");
     }
 
     //Generate email token
@@ -289,34 +304,37 @@ const userController = {
 
     //Send Response
     res.json({
-      message: `Check your email, ${user?.email} to reset your password. Link expires in 10 minutes.`
-    })
+      message: `Check your email, ${user?.email} to reset your password. Link expires in 10 minutes.`,
+    });
   }),
 
   //!----------Password Reset Verification ------------->
-  verifyPasswordReset: asyncHandler(async(req, res) => {
+  verifyPasswordReset: asyncHandler(async (req, res) => {
     //Get the token
-    const {resetToken} = req.params
+    const { resetToken } = req.params;
 
     //Get the password
-    const {password} = req.body
-    
+    const { password } = req.body;
+
     //Convert token with the one saved in DB
-    const verifyToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+    const verifyToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     //Find user
     const user = await User.findOne({
       passwordResetToken: verifyToken,
-      passwordResetExpires: {$gt: Date.now()}
-    })
-    
+      passwordResetExpires: { $gt: Date.now() },
+    });
+
     if (!user) {
-      throw new Error(`Account verification token has expired.`)
+      throw new Error(`Account verification token has expired.`);
     }
 
     //Update the password
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt)
+    user.password = await bcrypt.hash(password, salt);
 
     //Update user fields
     user.passwordResetToken = null;
@@ -325,9 +343,170 @@ const userController = {
     //Resave user
     await user.save();
     res.json({
-      message: 'Password successfully reset'
+      message: "Password successfully reset",
+    });
+  }),
+  //!----------Update Account Email ------------->
+  updateAccountEmail: asyncHandler(async (req, res) => {
+    // Get the email
+    const { email } = req.body;
+
+    // Find the user
+    const user = await User.findById(req.user);
+
+    // Update email
+    user.email = email;
+
+    // Set isEmailVerified to false in order to send email verification
+    user.isEmailVerified = false;
+
+    // Save user
+    await user.save();
+
+    // Generate token for user
+    const emailToken = await user.generateAccVerificationEmail();
+
+    // Send email
+    sendVerificationEmail(user?.email, emailToken);
+
+    // Send response
+    res.json({
+      message: `An account verification email has been sent to ${user?.email} and will expire in 10 minutes.`,
+    });
+  }),
+  //!----------Upload Profile Photo ------------->
+  UploadProfilePhoto: asyncHandler(async (req, res) => {
+    // Find user and update profile photo
+    await User.findByIdAndUpdate(
+      req.user,
+      {
+        $set: {
+          profilePicture: req.file,
+        },
+      },
+      { new: true }
+    );
+    //* Send response
+    res.json({
+      message: "Profile photo uploaded successfully.",
+    });
+  }),
+  //!----------Block User ------------->
+  blockUser: asyncHandler(async (req, res) => {
+    // Find the userId
+    const { userId } = req.body;
+
+    // Find user and update the isBlocked property
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isBlocked: true,
+      },
+      { new: true }
+    );
+    // Checked if user exist
+    if(!user) {
+      res.status(404).json({
+        message: "User not found."
+      })
+    }else {
+      res.json({
+        message: `${user?.username} account is now suspended.`,
+        username: user?.username,
+        isBlocked: user?.isBlocked
+      })
+    }
+  }),
+  //!----------Unblock User ------------->
+  unBlockUser: asyncHandler(async (req, res) => {
+    // Find the userId
+    const { userId } = req.body;
+
+    // Find user and update the isBlocked property
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isBlocked: false,
+      },
+      { new: true }
+    );
+    // Checked if user exist
+    if(!user) {
+      res.status(404).json({
+        message: "User not found."
+      })
+    }else {
+      res.json({
+        message: `${user?.username} account is active again.`,
+        username: user?.username,
+        isBlocked: user?.isBlocked
+      })
+    }
+  }),
+   //!----------Get All Users ------------->
+  users: asyncHandler(async(req, res) => {
+    //Find the users
+    const users = await User.find().populate("plan")
+
+    // Send response
+    res.json({
+      message: " Users fetched successfully.",
+      users
     })
   }),
+  //!----------Make As Admin ------------->
+  userIsAdmin: asyncHandler(async(req, res) => {
+    //Get the userId
+    const {userId} = req.body;
+    //Find user and update the isAdmin property
+    const user = await User.findByIdAndUpdate(userId, {role: "admin"}, {new: true})
+    // Checked if user exist
+    if (!user) {
+      res.json({
+        message: "User not found."
+      })
+    }else {
 
+      //Send the response
+      res.json({
+        message: `${user?.username} is now an admin.`,
+        role: user?.role
+      })
+    }
+  }),
+  //!----------Remove As Admin ------------->
+  userIsNotAdmin: asyncHandler(async(req, res) => {
+    //Get the userId
+    const {userId} = req.body;
+    //Find user and update the isAdmin property
+    const user = await User.findByIdAndUpdate(userId, {role: "user"}, {new: true})
+    // Checked if user exist
+    if (!user) {
+      res.json({
+        message: "User not found."
+      })
+    }else {
+
+      //Send the response
+      res.json({
+        message: `${user?.username} is no longer an admin.`,
+        role: user?.role
+      })
+    }
+  }),
+   //!----------Delete A User ------------->
+   deleteUser: asyncHandler(async(req, res) => {
+    // Get user's ID
+    const userId = req.params.userId;
+
+    const deletion = await User.findByIdAndDelete(userId);
+    if (!deletion) {
+      throw new Error("User is not available for deletion.");
+    }
+    res.json({
+      status: "success",
+      message: "User deleted successfully",
+    });
+  }),
 };
 export default userController;

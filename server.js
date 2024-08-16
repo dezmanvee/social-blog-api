@@ -45,6 +45,7 @@ cron.schedule('59 23 28-31 * *', async () => {
   timezone: 'America/New_York'
 })
 
+// calculateEarnings() 
 const app = express();  
 
 

@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     profilePicture: {
-      type: String,
+      type: Object,
       default: null,
     },
     email: {
@@ -77,7 +77,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-
+    isBlocked: {
+      type: Boolean,
+      default: false
+    },
+    role: {
+      type: String,
+      default: "user"
+    },
     //Relations
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
