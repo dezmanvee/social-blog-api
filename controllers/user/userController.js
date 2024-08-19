@@ -141,7 +141,13 @@ const userController = {
   //!----------User Profile------------->
   userProfile: asyncHandler(async (req, res) => {
     const user = await User.findById(req.user)
-      .populate("posts")
+      .populate({
+        path: "posts",
+        populate: {
+          path: "category",
+          model: "Category"
+        }
+      })
       .select(
         "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires"
       );

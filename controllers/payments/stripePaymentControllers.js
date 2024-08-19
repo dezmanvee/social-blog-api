@@ -85,8 +85,8 @@ const stripePaymentControllers = {
       //Send response to client
       res.json({
         status: 'success',
-        message: 'Payment is completed',
-        user: userExists
+        message: 'Payment Successful!',
+        email: userExists?.email,
       })
     }
   }),
@@ -111,7 +111,7 @@ const stripePaymentControllers = {
       res.json({
         status: 'succes',
         message: 'Free plan activated.',
-        user,
+        email: user?.email
       })
 
     } catch (error) {

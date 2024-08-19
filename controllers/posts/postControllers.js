@@ -82,14 +82,14 @@ const postControllers = {
     //Total posts based on filtering
     const totalPostsByFilter = await Post.countDocuments(filter);
     const allPosts = await Post.find(filter)
-    .populate({
-      path: "category",
-      populate: {
-        path: "author",
-        model: "User"
-      },
-    })
-    .populate('author')
+      .populate({
+        path: "category",
+        populate: {
+          path: "author",
+          model: "User",
+        },
+      })
+      .populate("author")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -133,22 +133,30 @@ const postControllers = {
     //Get post viewer ID
     const userId = req.user ? req.user : null;
 
-    const post = await Post.findById(postId).populate([
-      {
-        path: "comments",
-        populate: {
-          path: "author",
-          // model: "User", 
+    const post = await Post.findById(postId)
+      .populate([
+        {
+          path: "comments",
+          populate: {
+            path: "author",
+            model: "User",
+            select:
+              "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires", // Exclude sensitive fields here
+          },
         },
-      },
-      {
-        path: "category",
-        populate: {
-          path: "author",
-          // model: "User", 
+        {
+          path: "category",
+          populate: {
+            path: "author",
+            model: "User",
+            select:
+              "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires", // Exclude sensitive fields here
+          },
         },
-      },
-    ]);
+      ])
+      .select(
+        "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires"
+      );
     if (!post) {
       throw new Error("Post not found.");
     }

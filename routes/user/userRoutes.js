@@ -34,7 +34,7 @@ userRouter.get('/user-auth-status', userController.userAuthStatus);
 userRouter.post('/logout', userController.logout);
 
 //*----------Delete User------------
-userRouter.delete('/:userId', isAuthenticated, isAdmin,userController.deleteUser);
+userRouter.delete('/:userId', isAuthenticated, isAdmin, userController.deleteUser);
 
 //*----------Logout User------------
 userRouter.get('/profile', isAuthenticated, userController.userProfile);
