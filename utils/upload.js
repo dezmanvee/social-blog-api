@@ -13,10 +13,10 @@ cloudinary.config({
 //! Create an instance of the cloud-storage
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    allowedFormats: ['jpg', 'jpeg', 'png'],
+    allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
     params: {
         folder: 'social_blog_app',
-        format: 'jpg',
+        format: 'webp',
         transformation: [{width: 500, height: 500, crop: 'limit'}]
     }
 })

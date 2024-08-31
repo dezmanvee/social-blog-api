@@ -13,7 +13,7 @@ const isBlocked = asyncHandler(async (req, res, next) => {
         //Send response
         .json({ message: "Your account has been suspended. Kindly contact the admin for support."});
     }
-    // Move to next peice of middleware
+    // Move to next piece of middleware
     next();
 } 
   catch (error) {

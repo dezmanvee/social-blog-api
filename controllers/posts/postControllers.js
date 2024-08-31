@@ -47,7 +47,7 @@ const postControllers = {
     await Notification.create({
       userId: req.user,
       postId: createdPost._id,
-      message: `A new post was created by ${userExists?.username}`,
+      message: `New update from ${userExists?.username}! Check out their latest post and interactions now.`,
     });
 
     //Send a notification email to followers

@@ -54,10 +54,10 @@ userRouter.put('/generate-account-email-token', isAuthenticated, userController.
 //*---------- Account Verification Email------------
 userRouter.put('/verify-account-email/:emailToken', isAuthenticated, userController.verifyAccountEmail);
 
-//*---------- Account Verification Email------------
+//*---------- Forgot Password------------
 userRouter.post('/forgot-password', userController.generatePassportResetToken);
 
-//*---------- Account Verification Email------------
+//*---------- Verify Forgot Password/ Reset Password------------
 userRouter.post('/verify-forgot-password/:resetToken', userController.verifyPasswordReset);
 
 //*----------Update Email------------
@@ -77,6 +77,9 @@ userRouter.put('/is-admin', isAuthenticated,  isAdmin, userController.userIsAdmi
 
 //*----------User is not Admin------------
 userRouter.put('/is-not-admin', isAuthenticated,  isAdmin, userController.userIsNotAdmin);
+
+//*----------User profile to be deleted------------
+userRouter.get('/:userId', isAuthenticated,  isAdmin, userController.thirdUserProfile);
 
 
 export default userRouter;

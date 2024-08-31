@@ -42,7 +42,7 @@ const userController = {
 
       //check if user exists.
       if (!user) {
-        res.status(401).json(info.message);
+        return res.status(401).json(info.message);
       }
       //Generate token for user
       const authToken = jwt.sign({ id: user?._id }, process.env.JWT_SECRET);
@@ -97,7 +97,7 @@ const userController = {
         });
 
         //Redirect the user to the dashboard
-        res.redirect("http://localhost:3000/dashboard");
+        res.redirect("http://localhost:3000/dashboard/account/summary");
       }
     )(req, res, next);
   }),
@@ -122,7 +122,7 @@ const userController = {
           username: user?.username,
           profilePicture: user?.profilePicture,
           isAuthenticated: true,
-          createdAt: user?.createdAt
+          createdAt: user?.createdAt,
         });
       }
     } catch (error) {
@@ -145,8 +145,8 @@ const userController = {
         path: "posts",
         populate: {
           path: "category",
-          model: "Category"
-        }
+          model: "Category",
+        },
       })
       .select(
         "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires"
@@ -243,7 +243,7 @@ const userController = {
 
     //Send Response
     res.json({
-      message: ` An account verification email has been sent to ${user?.email} and will expire in 10 minutes.`,
+      message: `A verification email has been sent to ${user?.email}. Kindly verify your account within the next 10 minutes before the link expires.`,
     });
   }),
 
@@ -265,7 +265,9 @@ const userController = {
     });
 
     if (!user) {
-      throw new Error("Account verification token has expired.");
+      throw new Error(
+        "Your account verification token has expired. Please request a new one to complete the verification process."
+      );
     }
     //Update user fields
     user.isEmailVerified = true;
@@ -275,13 +277,15 @@ const userController = {
     //Resave user
     await user.save();
     res.json({
-      message: "Email verified.",
+      message:
+        "Your email has been successfully verified. You now have full access to your account.",
     });
   }),
 
   //!----------Password Reset Token------------->
   generatePassportResetToken: asyncHandler(async (req, res) => {
-    // Get the user email
+    try {
+      // Get the user email
     const { email } = req.body;
 
     //Find user by email
@@ -289,14 +293,17 @@ const userController = {
 
     //Check if user exists or not
     if (!user) {
-      throw new Error(
-        `User with the email, ${user?.email} is not found in our database.`
-      );
+      return res.status(400).json({
+        message: `We couldn't find an account associated with the email ${user?.email} in our records. Please double-check and try again.`
+      })
     }
 
     //If user did not register with local strategy
-    if (user?.authMethod !== "local") {
-      throw new Error("Kindly login with your social account");
+    if (user.authMethod !== "local") {
+
+      return res.status(400).json({
+        message: "It looks like you signed up with Google. Please log in using your Google account."
+      })
     }
 
     //Generate email token
@@ -309,48 +316,67 @@ const userController = {
     PasswordResetEmail(user?.email, resetToken);
 
     //Send Response
-    res.json({
-      message: `Check your email, ${user?.email} to reset your password. Link expires in 10 minutes.`,
+    return res.status(200).json({
+      message: `A password reset link has been sent to ${user?.email}. Please check your email and use the link within 10 minutes to reset your password.`,
     });
+      
+    } catch (error) {
+      return res.status(500).json({
+        message: "An error occured during tken generating process. Please try again later."
+      })
+    }
   }),
 
   //!----------Password Reset Verification ------------->
   verifyPasswordReset: asyncHandler(async (req, res) => {
-    //Get the token
-    const { resetToken } = req.params;
+    try {
+      //Get the token
+      const { resetToken } = req.params;
 
-    //Get the password
-    const { password } = req.body;
+      //Get the password
+      const { password } = req.body;
 
-    //Convert token with the one saved in DB
-    const verifyToken = crypto
-      .createHash("sha256")
-      .update(resetToken)
-      .digest("hex");
+      //Convert token with the one saved in DB
+      const verifyToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
 
-    //Find user
-    const user = await User.findOne({
-      passwordResetToken: verifyToken,
-      passwordResetExpires: { $gt: Date.now() },
-    });
+      //Find user
+      const user = await User.findOne({
+        passwordResetToken: verifyToken,
+        passwordResetExpires: { $gt: Date.now() },
+      });
 
-    if (!user) {
-      throw new Error(`Account verification token has expired.`);
+      if (!user) {
+        return res.status(400).json({
+          message:
+            "Your account verification token has expired. Please request a new one to complete the verification process.",
+        });
+      }
+
+      //Update the password
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+
+      //Update user fields
+      user.passwordResetToken = null;
+      user.passwordResetExpires = null;
+
+      //Save the updated user
+      await user.save();
+
+      //Respond with success
+      return res.status(201).json({
+        message:
+          "Your password has been successfully reset. You can now log in with your new credentials.",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        message:
+          "An error occured during password reset process. Please try again later.",
+      });
     }
-
-    //Update the password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-
-    //Update user fields
-    user.passwordResetToken = null;
-    user.passwordResetExpires = null;
-
-    //Resave user
-    await user.save();
-    res.json({
-      message: "Password successfully reset",
-    });
   }),
   //!----------Update Account Email ------------->
   updateAccountEmail: asyncHandler(async (req, res) => {
@@ -394,7 +420,8 @@ const userController = {
     );
     //* Send response
     res.json({
-      message: "Profile photo uploaded successfully.",
+      message:
+        "Your profile picture has been successfully uploaded! You're all set—your new image will now be visible on your profile.",
     });
   }),
   //!----------Block User ------------->
@@ -411,16 +438,16 @@ const userController = {
       { new: true }
     );
     // Checked if user exist
-    if(!user) {
+    if (!user) {
       res.status(404).json({
-        message: "User not found."
-      })
-    }else {
+        message: "User not found.",
+      });
+    } else {
       res.json({
-        message: `${user?.username} account is now suspended.`,
+        message: `The user, ${user?.username}'s account has been blocked. ${user?.username} will no longer have access to their account or platform features until further notice.`,
         username: user?.username,
-        isBlocked: user?.isBlocked
-      })
+        isBlocked: user?.isBlocked,
+      });
     }
   }),
   //!----------Unblock User ------------->
@@ -437,71 +464,77 @@ const userController = {
       { new: true }
     );
     // Checked if user exist
-    if(!user) {
+    if (!user) {
       res.status(404).json({
-        message: "User not found."
-      })
-    }else {
+        message: "User not found.",
+      });
+    } else {
       res.json({
-        message: `${user?.username} account is active again.`,
+        message: `The user, ${user?.username}'s account has been successfully unblocked and access to the platform features has been restored`,
         username: user?.username,
-        isBlocked: user?.isBlocked
-      })
+        isBlocked: user?.isBlocked,
+      });
     }
   }),
-   //!----------Get All Users ------------->
-  users: asyncHandler(async(req, res) => {
+  //!----------Get All Users ------------->
+  users: asyncHandler(async (req, res) => {
     //Find the users
-    const users = await User.find().populate("plan")
+    const users = await User.find().populate("plan");
 
     // Send response
     res.json({
       message: " Users fetched successfully.",
-      users
-    })
+      users,
+    });
   }),
   //!----------Make As Admin ------------->
-  userIsAdmin: asyncHandler(async(req, res) => {
+  userIsAdmin: asyncHandler(async (req, res) => {
     //Get the userId
-    const {userId} = req.body;
+    const { userId } = req.body;
     //Find user and update the isAdmin property
-    const user = await User.findByIdAndUpdate(userId, {role: "admin"}, {new: true})
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role: "admin" },
+      { new: true }
+    );
     // Checked if user exist
     if (!user) {
       res.json({
-        message: "User not found."
-      })
-    }else {
-
+        message: "User not found.",
+      });
+    } else {
       //Send the response
       res.json({
         message: `${user?.username} is now an admin.`,
-        role: user?.role
-      })
+        role: user?.role,
+      });
     }
   }),
   //!----------Remove As Admin ------------->
-  userIsNotAdmin: asyncHandler(async(req, res) => {
+  userIsNotAdmin: asyncHandler(async (req, res) => {
     //Get the userId
-    const {userId} = req.body;
+    const { userId } = req.body;
     //Find user and update the isAdmin property
-    const user = await User.findByIdAndUpdate(userId, {role: "user"}, {new: true})
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role: "user" },
+      { new: true }
+    );
     // Checked if user exist
     if (!user) {
       res.json({
-        message: "User not found."
-      })
-    }else {
-
+        message: "User not found.",
+      });
+    } else {
       //Send the response
       res.json({
         message: `${user?.username} is no longer an admin.`,
-        role: user?.role
-      })
+        role: user?.role,
+      });
     }
   }),
-   //!----------Delete A User ------------->
-   deleteUser: asyncHandler(async(req, res) => {
+  //!----------Delete A User ------------->
+  deleteUser: asyncHandler(async (req, res) => {
     // Get user's ID
     const userId = req.params.userId;
 
@@ -513,6 +546,25 @@ const userController = {
       status: "success",
       message: "User deleted successfully",
     });
+  }),
+
+  //!----------Get Third User Profile------------->
+  thirdUserProfile: asyncHandler(async (req, res) => {
+    //Get the userId
+    const { userId } = req.params;
+
+    //Find user
+    const user = await User.findById(userId).select(
+      "-password -passwordResetToken -passwordResetExpires -accountVerificationToken -accountVerificationExpires"
+    );
+    //Check if user exist
+    if (!user) {
+      res.json({ message: "User not found." });
+
+      //Send response
+    } else {
+      res.json({ status: "success", user });
+    }
   }),
 };
 export default userController;

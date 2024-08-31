@@ -16,19 +16,21 @@ passport.use(
     async (username, password, done) => {
       try {
         // check if user exist
+
         const user = await User.findOne({ username });
 
         if (!user) {
-          return done(null, false, { message: "Invalid login details" });
+          return done(null, false, { message: "Invalid login credentials" });
         }
 
         //check the correctness of password
         const match = await bcrypt.compare(password, user.password);
+        console.log("Password comparison:", match);
 
         if (match) {
           return done(null, user);
         } else {
-          return done(null, false, { message: "Invalid login details" });
+          return done(null, false, { message: "Invalid login credentials" });
         }
       } catch (error) {
         return done(error);
@@ -46,7 +48,7 @@ const options = {
       let authToken = null;
       if (req && req.cookies) {
         authToken = req.cookies["authToken"];
-        
+
         return authToken;
       }
     },
@@ -55,7 +57,7 @@ const options = {
 };
 
 passport.use(
-  new JwtStrategy(options, async(jwtPayload, done) => {
+  new JwtStrategy(options, async (jwtPayload, done) => {
     try {
       const user = await User.findById(jwtPayload.id);
       if (user) {
@@ -76,8 +78,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL
-
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -86,7 +87,12 @@ passport.use(
           googleId: profile.id,
         });
         // Grab the properties of the profile data
-        const { id, displayName, name, _json: { picture }, } = profile;
+        const {
+          id,
+          displayName,
+          name,
+          _json: { picture },
+        } = profile;
 
         //If email is available
         let email = "";
